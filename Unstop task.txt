@@ -1,0 +1,364 @@
+Here's a structured plan for developing a Todo List application using React or Next.js:
+
+## 1. Project Setup
+
+### Using React:
+1. Create a new React application using Create React App:
+   ```bash
+   npx create-react-app todo-list-app
+   cd todo-list-app
+   ```
+
+### Using Next.js:
+1. Create a new Next.js application:
+   ```bash
+   npx create-next-app@latest todo-list-app
+   cd todo-list-app
+   ```
+
+## 2. Project Structure
+
+Organize the project directories as follows:
+```
+/src
+  /components
+    - TaskList.js
+    - TaskItem.js
+    - TaskForm.js
+    - SearchBar.js
+  /pages (Next.js only)
+    - index.js
+  /styles
+    - globals.css
+  /data
+    - tasks.json
+  - App.js (React only)
+  - index.js (React only)
+  - _app.js (Next.js only)
+  - _document.js (Next.js only)
+```
+
+## 3. Core Features Implementation
+
+### Create Task
+- **TaskForm Component**: A form to add new tasks.
+- **State Management**: Use React state or context to manage tasks.
+
+### Update Task
+- **TaskItem Component**: Each task can be edited inline or in a modal.
+
+### Mark as Done
+- **TaskItem Component**: Checkbox or button to mark tasks as completed.
+
+### Search Tasks
+- **SearchBar Component**: Input field to filter tasks based on the search query.
+
+### Expandable List
+- **TaskItem Component**: Each task is expandable to show a description and a timestamp.
+
+## 4. Data Storage
+- **tasks.json**: A dummy JSON file to act as a data repository. Load this data on the client side.
+
+## 5. Server-Side Rendering (Next.js)
+- Implement SSR for the pages to enhance performance.
+
+## 6. URL Parameters for Search
+- Use URL parameters to manage search queries.
+
+## 7. Code Quality
+- Ensure the code is modular, well-organized, and commented.
+
+## 8. Submission Requirements
+- **Git Repository**: Clear commit messages and a structured README.md.
+
+### README.md
+Include:
+- A brief overview of the system design.
+- An explanation of the implementation.
+- Setup and run instructions.
+
+## Detailed Implementation
+
+### Components
+
+#### TaskForm.js
+```javascript
+import React, { useState } from 'react';
+
+const TaskForm = ({ addTask }) => {
+  const [task, setTask] = useState({ title: '', description: '' });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (task.title.trim()) {
+      addTask({ ...task, completed: false, updatedAt: new Date().toISOString() });
+      setTask({ title: '', description: '' });
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        placeholder="Task title"
+        value={task.title}
+        onChange={(e) => setTask({ ...task, title: e.target.value })}
+      />
+      <textarea
+        placeholder="Task description"
+        value={task.description}
+        onChange={(e) => setTask({ ...task, description: e.target.value })}
+      />
+      <button type="submit">Add Task</button>
+    </form>
+  );
+};
+
+export default TaskForm;
+```
+
+#### TaskItem.js
+```javascript
+import React, { useState } from 'react';
+
+const TaskItem = ({ task, updateTask, deleteTask }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [updatedTask, setUpdatedTask] = useState(task);
+
+  const handleUpdate = () => {
+    updateTask(updatedTask);
+    setIsEditing(false);
+  };
+
+  return (
+    <div>
+      <input
+        type="checkbox"
+        checked={task.completed}
+        onChange={() => updateTask({ ...task, completed: !task.completed })}
+      />
+      {isEditing ? (
+        <div>
+          <input
+            type="text"
+            value={updatedTask.title}
+            onChange={(e) => setUpdatedTask({ ...updatedTask, title: e.target.value })}
+          />
+          <textarea
+            value={updatedTask.description}
+            onChange={(e) => setUpdatedTask({ ...updatedTask, description: e.target.value })}
+          />
+          <button onClick={handleUpdate}>Save</button>
+        </div>
+      ) : (
+        <div>
+          <h3>{task.title}</h3>
+          <p>{task.description}</p>
+          <small>Last updated: {new Date(task.updatedAt).toLocaleString()}</small>
+          <button onClick={() => setIsEditing(true)}>Edit</button>
+          <button onClick={() => deleteTask(task.id)}>Delete</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TaskItem;
+```
+
+#### TaskList.js
+```javascript
+import React, { useState, useEffect } from 'react';
+import TaskItem from './TaskItem';
+import tasksData from '../data/tasks.json';
+
+const TaskList = ({ searchQuery }) => {
+  const [tasks, setTasks] = useState(tasksData);
+
+  useEffect(() => {
+    // Filter tasks based on searchQuery
+    if (searchQuery) {
+      setTasks(tasksData.filter(task => task.title.toLowerCase().includes(searchQuery.toLowerCase())));
+    } else {
+      setTasks(tasksData);
+    }
+  }, [searchQuery]);
+
+  const addTask = (newTask) => {
+    setTasks([...tasks, { ...newTask, id: Date.now().toString() }]);
+  };
+
+  const updateTask = (updatedTask) => {
+    setTasks(tasks.map(task => (task.id === updatedTask.id ? updatedTask : task)));
+  };
+
+  const deleteTask = (taskId) => {
+    setTasks(tasks.filter(task => task.id !== taskId));
+  };
+
+  return (
+    <div>
+      {tasks.map(task => (
+        <TaskItem key={task.id} task={task} updateTask={updateTask} deleteTask={deleteTask} />
+      ))}
+    </div>
+  );
+};
+
+export default TaskList;
+```
+
+#### SearchBar.js
+```javascript
+import React, { useState } from 'react';
+
+const SearchBar = ({ setSearchQuery }) => {
+  const [query, setQuery] = useState('');
+
+  const handleSearch = (e) => {
+    setQuery(e.target.value);
+    setSearchQuery(e.target.value);
+  };
+
+  return (
+    <input
+      type="text"
+      placeholder="Search tasks..."
+      value={query}
+      onChange={handleSearch}
+    />
+  );
+};
+
+export default SearchBar;
+```
+
+### App.js (React) or index.js (Next.js)
+```javascript
+import React, { useState } from 'react';
+import TaskForm from '../components/TaskForm';
+import TaskList from '../components/TaskList';
+import SearchBar from '../components/SearchBar';
+
+const App = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  return (
+    <div>
+      <h1>Todo List</h1>
+      <SearchBar setSearchQuery={setSearchQuery} />
+      <TaskForm />
+      <TaskList searchQuery={searchQuery} />
+    </div>
+  );
+};
+
+export default App;
+```
+
+### SSR Implementation (Next.js)
+- In Next.js, use `getServerSideProps` for SSR:
+
+#### index.js
+```javascript
+import React, { useState } from 'react';
+import TaskForm from '../components/TaskForm';
+import TaskList from '../components/TaskList';
+import SearchBar from '../components/SearchBar';
+import tasksData from '../data/tasks.json';
+
+const Home = ({ tasks }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  return (
+    <div>
+      <h1>Todo List</h1>
+      <SearchBar setSearchQuery={setSearchQuery} />
+      <TaskForm />
+      <TaskList searchQuery={searchQuery} initialTasks={tasks} />
+    </div>
+  );
+};
+
+export async function getServerSideProps() {
+  // Fetch tasks from the JSON file
+  const tasks = tasksData;
+
+  return {
+    props: { tasks },
+  };
+}
+
+export default Home;
+```
+
+## 9. Styling
+- Use CSS modules or styled-components for styling to keep styles scoped and modular.
+
+## 10. Git Repository
+- Initialize a Git repository and commit the project structure.
+- Push the code to a remote repository (e.g., GitHub).
+- Ensure clear commit messages and a well-structured README.md.
+
+### README.md
+```markdown
+# Todo List Application
+
+## Overview
+This is a simple Todo List application built using React/Next.js. It allows users to create, update, delete, and search tasks. The application supports server-side rendering for better performance (Next.js).
+
+## Features
+- Create Task: Add new tasks.
+- Update Task: Edit existing tasks.
+- Mark as Done: Mark tasks as completed.
+- Search Tasks: Filter tasks based on search queries.
+- Expandable List: Show task details and last updated timestamp when expanded.
+
+## Installation
+
+### Prerequisites
+- Node.js
+- npm or yarn
+
+### Steps
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd todo-list-app
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+
+3. Run the application:
+   ```bash
+   npm start
+   # or
+   yarn start
+   ```
+
+4.
+
+ Open your browser and go to `http://localhost:3000`.
+
+## System Design
+- The application is divided into components for better modularity.
+- Uses JSON file as a data repository for simplicity.
+- Implements SSR in Next.js for enhanced performance.
+
+## Implementation
+- The core features are implemented in separate components.
+- Search functionality uses URL parameters for better user experience.
+- State management is done using React's useState and useEffect hooks.
+
+## Future Enhancements
+- Integrate a real backend for persistent data storage.
+- Add user authentication.
+- Improve styling and user interface.
+```
+
+By following these steps, you'll have a functional Todo List application with the required features, good code quality, and a comprehensive README.md for setup and usage instructions.
